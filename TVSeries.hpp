@@ -59,10 +59,11 @@ public:
 /** @brief Class to represent a APP TVSeries Management */
 class TVSeriesAPP {
 private:
-// Mapas para armazenar dados:
-    unordered_map<string, TitleBasics> seriesData; // Mapa para dados de séries de TV (tconst como chave)
-    unordered_map<string, vector<titlePrincipals>> principalsData; // Mapa para dados de membros da equipa e do elenco (tconst como chave, conjunto de nomes como valor)
-    unordered_map<string, vector<TitleEpisode>> episodeData; // Mapa para dados de episódios (tconst como chave, vector de episódios como valor)
+
+    unordered_map<string, TitleBasics> series; // Mapa para dados de séries de TV (tconst como chave)
+    unordered_map<string, vector<TitlePrincipals>> actorsInfo; // Mapa para dados de membros da equipa e do elenco (tconst como chave, conjunto de nomes como valor)
+    unordered_map<string, vector<TitleEpisode>> episodeBySerie; // Mapa para dados de episódios (tconst como chave, vector de episódios como valor)
+
     
 public:
 
@@ -106,10 +107,3 @@ public:
 
 
 #endif // TVSERIES_HPP
-
-
-
-
-
-
-
