@@ -660,8 +660,8 @@ int main() {
     // Parse data from TSV files
 
     TVSeriesAPP tvSeriesApp5;
-    int res = parseTitleBasics("series5.basics.tsv",tvSeriesApp5);
-    
+    int res = 0;
+    res = parseTitleBasics("series5.basics.tsv",tvSeriesApp5);
     res = parseTitleEpisodes("series5.episode.tsv", tvSeriesApp5);
     res = parseTitlePrincipals("series5.principals.names.tsv",tvSeriesApp5);
     
