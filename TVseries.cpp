@@ -109,6 +109,10 @@ vector<string> TVSeriesAPP::principalsWithMultipleCategories(const string& serie
         return {};
     }
 
+    if (episodeBySerie.find(seriesTconst) == episodeBySerie.end()){
+        return {};
+    }
+
     unordered_set<string> uniqueActors;
     unordered_map<string, unordered_set<string>> actorCategories;
 
@@ -223,7 +227,7 @@ int TVSeriesAPP::principalInMultipleGenres(vector<string> vGenres) {
 }
 
 
-//PERGUNTA 6: 
+//PERGUNTA 6: //DDDDDDDDDDDDDDDDDDDDOOOOOOOOOOOOOOOOOOOOOONNNNNNNNNNNNNNNNNNNNNNEEEEEEEEEEEEEEEEEEEE
 string TVSeriesAPP::getPrincipalFromCharacter(const string& character) const {
     unordered_map<string, int> characterCount;
 
@@ -251,14 +255,5 @@ string TVSeriesAPP::getPrincipalFromCharacter(const string& character) const {
     }
 
     return mostFrequentActor.empty() ? " " : mostFrequentActor; // Return space if no actor found
-}
-
-
-
-
-
-
-
-
-
-
+}    
+/*---------------------------------------1 ERRO ----------------------------------------------------------*/
