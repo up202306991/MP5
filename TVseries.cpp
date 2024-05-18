@@ -103,39 +103,6 @@ string TVSeriesAPP::getMostSeriesGenre() const {
 
 //PERGUNTA 3: 
 
-string TVSeriesAPP::getPrincipalFromCharacter(const string& character) const {
-    unordered_map<string, int> characterCount;
-
-    for (const auto& episodePrincipals : actorsInfo) {
-        for (const auto& principal : episodePrincipals.second) {
-            for (const string& charName : principal.characters) {
-                string normalizedCharName = charName;
-                // Remove all non-alphabetic characters
-                normalizedCharName.erase(remove_if(normalizedCharName.begin(), normalizedCharName.end(), [](char c){ return !isalpha(c); }), normalizedCharName.end());
-
-                if (normalizedCharName == character) {
-                    characterCount[principal.primaryName]++;
-                }
-            }
-        }
-    }
-
-    string mostFrequentActor;
-    int maxCount = 0;
-    for (const auto& count : characterCount) {
-        if (count.second > maxCount || (count.second == maxCount && count.first < mostFrequentActor)) {
-            mostFrequentActor = count.first;
-            maxCount = count.second;
-        }
-    }
-
-    return mostFrequentActor.empty() ? " " : mostFrequentActor; // Return space if no actor found
-}
-
-
-
-//PERGUNTA 4
-
 vector<string> TVSeriesAPP::principalsWithMultipleCategories(const string& seriesTconst) const {
     // Check if series exists
     if (series.find(seriesTconst) == series.end()) {
@@ -174,28 +141,80 @@ vector<string> TVSeriesAPP::principalsWithMultipleCategories(const string& serie
     return result;
 }
 
+
+//PERGUNTA 4
+
+vector<string> TVSeriesAPP::principalsInAllEpisodes(const string& seriesTconst) const {
+    // Check if series exists
+    auto itr = episodeBySerie.find(seriesTconst);
+    if (itr == episodeBySerie.end() || itr->second.empty()) return {};
+
+    const vector<TitleEpisode>& episodes = episodeBySerie.at(seriesTconst);
+    unordered_set<string> allEpisodesActors;
+
+    for (const TitleEpisode& episode : episodes) {
+        // Verifica se o episódio tem atores associados
+        if (actorsInfo.count(episode.tconst) > 0) {
+            const vector<TitlePrincipals>& actorsForEpisode = actorsInfo.at(episode.tconst);
+
+            // Verifica se o vetor de atores está vazio
+            if (!actorsForEpisode.empty()) {
+
+                if (allEpisodesActors.empty()) {
+                    for (const TitlePrincipals& actor : actorsForEpisode) {
+                        allEpisodesActors.insert(actor.primaryName);
+                    }
+                } else {
+                    unordered_set<string> intersection;
+                    for (const TitlePrincipals& actor : actorsForEpisode) {
+                        if (allEpisodesActors.count(actor.primaryName) > 0) {
+                            intersection.insert(actor.primaryName);
+                        }
+                    }
+                    allEpisodesActors = intersection;
+                }
+
+            // Se o vetor de atores estiver vazio, pula para o próximo episódio
+            } else {
+                continue; 
+            }
+        }
+    }
+
+    vector<string> result(allEpisodesActors.begin(), allEpisodesActors.end());
+    sort(result.begin(), result.end());
+    return result;
+}
+
+
+
+
  
 //PERGUNTA 5:
 
-int TVSeriesAPP::principalInMultipleGenres(vector<string> vGenres){
+int TVSeriesAPP::principalInMultipleGenres(vector<string> vGenres) {
     int matchingActors = 0;
     unordered_set<string> uniqueActors; // Para contar atores de forma única
 
-    for (const auto& series : series) {
-        const string& seriesTconst = series.first;
-        const TitleBasics& serieData = series.second;
+    for (const auto& seriesPair : series) {
+        const string& seriesTconst = seriesPair.first;
+        const TitleBasics& serieData = seriesPair.second;
 
-        bool hasMatchingGenre = any_of(serieData.genres.begin(), serieData.genres.end(), 
-                                       [&](const string& genre) { 
-                                           return find(vGenres.begin(), vGenres.end(), genre) != vGenres.end(); 
+        // Verifica se a série possui pelo menos um dos gêneros desejados
+        bool hasMatchingGenre = any_of(serieData.genres.begin(), serieData.genres.end(),
+                                       [&](const string& genre) {
+                                           return find(vGenres.begin(), vGenres.end(), genre) != vGenres.end();
                                        });
 
         if (hasMatchingGenre) {
-            // Itera sobre os atores da série
-            for (const auto& actor : actorsInfo.at(seriesTconst)) {
-                // Insere o ator no conjunto e verifica se foi inserido com sucesso
-                if (uniqueActors.insert(actor.nconst).second) { // Correção aqui: actor.nconst
-                    matchingActors++;
+            // Verifica se 'actorsInfo' possui informações de atores para a série atual
+            if (actorsInfo.find(seriesTconst) != actorsInfo.end()) {
+                // Itera sobre os atores da série
+                for (const auto& actor : actorsInfo.at(seriesTconst)) {
+                    // Insere o ator no conjunto e verifica se foi inserido com sucesso
+                    if (uniqueActors.insert(actor.nconst).second) {
+                        matchingActors++;
+                    }
                 }
             }
         }
@@ -205,10 +224,35 @@ int TVSeriesAPP::principalInMultipleGenres(vector<string> vGenres){
 
 
 //PERGUNTA 6: 
-vector<string> TVSeriesAPP::principalsInAllEpisodes(const string& seriesTconst) const {
+string TVSeriesAPP::getPrincipalFromCharacter(const string& character) const {
+    unordered_map<string, int> characterCount;
 
-    return {};
+    for (const auto& episodePrincipals : actorsInfo) {
+        for (const auto& principal : episodePrincipals.second) {
+            for (const string& charName : principal.characters) {
+                string normalizedCharName = charName;
+                // Remove all non-alphabetic characters
+                normalizedCharName.erase(remove_if(normalizedCharName.begin(), normalizedCharName.end(), [](char c){ return !isalpha(c); }), normalizedCharName.end());
+
+                if (normalizedCharName == character) {
+                    characterCount[principal.primaryName]++;
+                }
+            }
+        }
+    }
+
+    string mostFrequentActor;
+    int maxCount = 0;
+    for (const auto& count : characterCount) {
+        if (count.second > maxCount || (count.second == maxCount && count.first < mostFrequentActor)) {
+            mostFrequentActor = count.first;
+            maxCount = count.second;
+        }
+    }
+
+    return mostFrequentActor.empty() ? " " : mostFrequentActor; // Return space if no actor found
 }
+
 
 
 
