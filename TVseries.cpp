@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <functional>
 #include <stack>
+#include <unordered_set>
 
 TVSeriesAPP::TVSeriesAPP() {
 
@@ -100,94 +101,75 @@ string TVSeriesAPP::getMostSeriesGenre() const {
 }
 
 
-//PERGUNTA 3
+//PERGUNTA 3: 
 
-vector<string> TVSeriesAPP::principalsWithMultipleCategories(const string& seriesTconst ) const {
-  // Check if series exists
-  if (series.find(seriesTconst) == series.end()) {
-    return {};
-  }
+string TVSeriesAPP::getPrincipalFromCharacter(const string& character) const {
+    unordered_map<string, int> characterCount;
 
-  // Set to store unique actors with multiple categories
-  unordered_set<string> uniqueActors;
+    for (const auto& episodePrincipals : actorsInfo) {
+        for (const auto& principal : episodePrincipals.second) {
+            for (const string& charName : principal.characters) {
+                string normalizedCharName = charName;
+                // Remove all non-alphabetic characters
+                normalizedCharName.erase(remove_if(normalizedCharName.begin(), normalizedCharName.end(), [](char c){ return !isalpha(c); }), normalizedCharName.end());
 
-  // Map to store categories for each actor in an episode
-  unordered_map<string, unordered_set<string>> actorCategories;
-
-  // Access episodes for the series
-  const vector<TitleEpisode>& episodes = episodeBySerie.at(seriesTconst);
-
-  // Iterate through episodes
-  for (const TitleEpisode& episode : episodes) {
-    // Access actors for the episode
-    const vector<TitlePrincipals>& actorsForEpisode = actorsInfo.at(episode.tconst);
-
-    // Iterate through actors in the episode
-    for (const TitlePrincipals& actor : actorsForEpisode) {
-      const string& actorName = actor.primaryName;
-
-      // Check if actor already has categories
-      if (actorCategories.count(actorName)) {
-        // Actor found before, add current category
-        actorCategories[actorName].insert(actor.category);
-      } else {
-        // New actor, create entry with current category
-        unordered_set<string> categories = {actor.category};
-        actorCategories[actorName] = categories;
-      }
-
-      // Check if actor has multiple categories
-      if (actorCategories[actorName].size() > 1) {
-        uniqueActors.insert(actorName);
-      }
-    }
-  }
-
-  // Convert to vector and return
-  vector<string> result(uniqueActors.begin(), uniqueActors.end());
-    sort(result.begin(), result.end());
-    return result;
-}
-
-//PERGUNTA 4: 
-
-vector<string> TVSeriesAPP::principalsInAllEpisodes(const string& seriesTconst) const {
-  // Check if series exists
-  if (series.find(seriesTconst) == series.end()) {
-    return {};
-  }
-
-  // Get all episodes for the series
-  const vector<TitleEpisode>& episodes = episodeBySerie.at(seriesTconst);
-
-  // Set to store actors who appear in all episodes
-  unordered_set<string> allEpisodesActors;
-
-  // Iterate through all episodes
-  for (const TitleEpisode& episode : episodes) {
-    // Get actors for the current episode
-    const vector<TitlePrincipals>& actorsForEpisode = actorsInfo.at(episode.tconst);
-
-    // Check if this is the first episode
-    if (allEpisodesActors.empty()) {
-      // First episode, add all actors to the set
-      for (const TitlePrincipals& actor : actorsForEpisode) {
-        allEpisodesActors.insert(actor.primaryName);
-      }
-    } else {
-      // Not the first episode, check intersection with existing set
-      unordered_set<string> intersection;
-    for (const TitlePrincipals& actor : actorsForEpisode) {
-        if (allEpisodesActors.count(actor.primaryName) > 0) {
-            intersection.insert(actor.primaryName);
+                if (normalizedCharName == character) {
+                    characterCount[principal.primaryName]++;
+                }
+            }
         }
     }
-    allEpisodesActors = intersection;
-    }
-  }
 
-    // Convert to sorted vector and return
-    vector<string> result(allEpisodesActors.begin(), allEpisodesActors.end());
+    string mostFrequentActor;
+    int maxCount = 0;
+    for (const auto& count : characterCount) {
+        if (count.second > maxCount || (count.second == maxCount && count.first < mostFrequentActor)) {
+            mostFrequentActor = count.first;
+            maxCount = count.second;
+        }
+    }
+
+    return mostFrequentActor.empty() ? " " : mostFrequentActor; // Return space if no actor found
+}
+
+
+
+//PERGUNTA 4
+
+vector<string> TVSeriesAPP::principalsWithMultipleCategories(const string& seriesTconst) const {
+    // Check if series exists
+    if (series.find(seriesTconst) == series.end()) {
+        return {};
+    }
+
+    unordered_set<string> uniqueActors;
+    unordered_map<string, unordered_set<string>> actorCategories;
+
+    const vector<TitleEpisode>& episodes = episodeBySerie.at(seriesTconst);
+
+    for (const TitleEpisode& episode : episodes) {
+        // Verifica se o episódio tem atores associados
+        if (actorsInfo.count(episode.tconst) > 0) { 
+            const vector<TitlePrincipals>& actorsForEpisode = actorsInfo.at(episode.tconst);
+
+            for (const TitlePrincipals& actor : actorsForEpisode) {
+                const string& actorName = actor.primaryName;
+
+                if (actorCategories.count(actorName)) {
+                    actorCategories[actorName].insert(actor.category);
+                } else {
+                    unordered_set<string> categories = {actor.category};
+                    actorCategories[actorName] = categories;
+                }
+
+                if (actorCategories[actorName].size() > 1) {
+                    uniqueActors.insert(actorName);
+                }
+            }
+        }
+    }
+
+    vector<string> result(uniqueActors.begin(), uniqueActors.end());
     sort(result.begin(), result.end());
     return result;
 }
@@ -195,29 +177,25 @@ vector<string> TVSeriesAPP::principalsInAllEpisodes(const string& seriesTconst) 
  
 //PERGUNTA 5:
 
-int TVSeriesAPP::principalInMultipleGenres(vector<string> vGenres) int TVSeriesAPP::principalInMultipleGenres(const vector<string>& vGenres) const {
-  // Counter to store actors in matching genres
-  int matchingActors = 0;
+int TVSeriesAPP::principalInMultipleGenres(vector<string> vGenres){
+    int matchingActors = 0;
+    unordered_set<string> uniqueActors; // Para contar atores de forma única
 
-  // Iterate through all series
-  for (const auto& series : series) {
-    const string& seriesTconst = series.first;
-    const TitleBasics& serieData = series.second;
+    for (const auto& series : series) {
+        const string& seriesTconst = series.first;
+        const TitleBasics& serieData = series.second;
 
-    // Check if series genres intersect with vGenres
-    bool hasMatchingGenre = false;
-    for (const string& genre : serieData.genres) {
-      if (find(vGenres.begin(), vGenres.end(), genre) != vGenres.end()) {
-        hasMatchingGenre = true;
-        break;
-      }
-    }
+        bool hasMatchingGenre = any_of(serieData.genres.begin(), serieData.genres.end(), 
+                                       [&](const string& genre) { 
+                                           return find(vGenres.begin(), vGenres.end(), genre) != vGenres.end(); 
+                                       });
 
-    // If series has matching genre, count actors
-     if (hasMatchingGenre) {
+        if (hasMatchingGenre) {
+            // Itera sobre os atores da série
             for (const auto& actor : actorsInfo.at(seriesTconst)) {
-                if (uniqueActors.insert(actor.nconst).second) { 
-                    matchingActors++; 
+                // Insere o ator no conjunto e verifica se foi inserido com sucesso
+                if (uniqueActors.insert(actor.nconst).second) { // Correção aqui: actor.nconst
+                    matchingActors++;
                 }
             }
         }
@@ -226,44 +204,11 @@ int TVSeriesAPP::principalInMultipleGenres(vector<string> vGenres) int TVSeriesA
 }
 
 
-
 //PERGUNTA 6: 
-string TVSeriesAPP::getPrincipalFromCharacter(const string& character) const {
+vector<string> TVSeriesAPP::principalsInAllEpisodes(const string& seriesTconst) const {
 
-    unordered_map<string, int> characterCount;
-
-    for(auto& episodePrincipals : principalsByEpisode){
-        for(auto& principal : episodePrincipals.second){
-            for(string& charName : principal.characters){
-                string normalizedCharName = charName;
-
-                normalizedCharName.erase(remove(normalizedCharName.begin(), normalizedCharName.end, '['), normalizedCharName.end());
-                normalizedCharName.erase(remove(normalizedCharName.begin(), normalizedCharName.end, ']'), normalizedCharName.end());
-                normalizedCharName.erase(remove(normalizedCharName.begin(), normalizedCharName.end, '/'), normalizedCharName.end());
-                normalizedCharName.erase(remove(normalizedCharName.begin(), normalizedCharName.end, ' '), normalizedCharName.end());
-
-                if(normalizeCharName == character){
-                    characterCount[principal.primaryName]++
-                }
-            }
-        }
-    }
-    string mostFrequentActor;
-    int maxCount = 0;
-
-    for(auto& count : characterCount){
-        if(count.second > maxCount || (count.second == maxCount && count.first < mostFrequentActor)){
-            maxCount = count.second;
-            mostFrequentActor = count.first;
-        }
-    }
-
-    return mostFrequentActor.empty() > " " : mostFrequentActor;
+    return {};
 }
-
-
-
-
 
 
 
